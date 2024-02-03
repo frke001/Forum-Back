@@ -3,11 +3,13 @@ package org.unibl.etf.forumback.controllers;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.unibl.etf.forumback.models.dto.ChangePermissionDTO;
 import org.unibl.etf.forumback.models.dto.ChangeRoleDTO;
 import org.unibl.etf.forumback.models.dto.UserInfoDTO;
 import org.unibl.etf.forumback.services.UserService;
+import org.unibl.etf.forumback.services.WAFService;
 
 import java.util.List;
 
@@ -16,9 +18,11 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final WAFService wafService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, WAFService wafService) {
         this.userService = userService;
+        this.wafService = wafService;
     }
 
     @GetMapping("")
@@ -36,7 +40,8 @@ public class UserController {
         this.userService.approve(id);
     }
     @PutMapping("/role/{id}")
-    public void changeRole(@PathVariable Long id, @RequestBody @Valid ChangeRoleDTO request){
+    public void changeRole(@PathVariable Long id, @RequestBody @Valid ChangeRoleDTO request, BindingResult bindingResult){
+        wafService.checkValidity(bindingResult);
         this.userService.changeRole(id, request);
     }
     @PutMapping("/permission/{id}")

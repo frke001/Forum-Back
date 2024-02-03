@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.unibl.etf.forumback.exceptions.NotFoundException;
 import org.unibl.etf.forumback.exceptions.UnauthorizedException;
+import org.unibl.etf.forumback.models.dto.AcceptCommentDTO;
 import org.unibl.etf.forumback.models.dto.JwtUserDTO;
 import org.unibl.etf.forumback.models.dto.RequestCommentDTO;
 import org.unibl.etf.forumback.models.dto.ResponseCommentDTO;
@@ -87,12 +88,45 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public void delete(Long commentId, Long userId, Authentication auth) {
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(userId))
+        {
+            throw new UnauthorizedException();
+        }
         if(commentRepository.existsById(commentId)){
             this.commentRepository.deleteById(commentId);
         }else{
             throw new NotFoundException();
         }
 
+    }
+
+    @Override
+    public List<ResponseCommentDTO> getAllNotApproved() {
+        var list = commentRepository.findAllNotApproved();
+        return list.stream().map(el->{
+            ResponseCommentDTO responseCommentDTO = modelMapper.map(el, ResponseCommentDTO.class);
+            responseCommentDTO.setCreationDate(new SimpleDateFormat("dd MMM, yyyy HH:mm").format(el.getCreationDate()));
+            return responseCommentDTO;
+        }).collect(Collectors.toList());
+
+    }
+
+    @Override
+    public void accept(Long id,AcceptCommentDTO request) {
+        CommentEntity commentEntity = commentRepository.findById(id).orElseThrow(NotFoundException::new);
+        commentEntity.setText(request.getText());
+        commentEntity.setApproved(true);
+        commentRepository.saveAndFlush(commentEntity);
+    }
+
+    @Override
+    public void forbid(Long id) {
+        if(commentRepository.existsById(id)){
+            this.commentRepository.deleteById(id);
+        }else{
+            throw new NotFoundException();
+        }
     }
 
 }

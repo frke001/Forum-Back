@@ -14,4 +14,7 @@ public interface CommentRepository extends JpaRepository<CommentEntity, Long> {
 
     @Query("SELECT c FROM CommentEntity c WHERE c.category.id = :categoryId AND c.approved = true ORDER BY c.creationDate DESC")
     List<CommentEntity> findTop20ByCategoryOrderByCreationDateDesc(@Param("categoryId") Long categoryId, Pageable pageable);
+
+    @Query("SELECT c FROM CommentEntity c WHERE c.approved = false ORDER BY c.creationDate DESC")
+    List<CommentEntity> findAllNotApproved();
 }

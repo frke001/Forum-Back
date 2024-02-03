@@ -17,4 +17,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     List<UserEntity> getAllByIdNot(Long id);
 
+    Optional<UserEntity> findByMail(String mail);
+
 }

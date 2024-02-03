@@ -17,4 +17,5 @@ public class ResponseCommentDTO {
     private String userSenderUsername;
     private String userSenderName;
     private String userSenderSurname;
+    private String categoryName;
 }

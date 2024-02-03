@@ -17,6 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+import org.unibl.etf.forumback.models.enums.Role;
 import org.unibl.etf.forumback.services.JwtUserDetailsService;
 
 import java.util.List;
@@ -46,20 +47,27 @@ public class WebSecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 //.csrf(csrf -> csrf.csrfTokenRequestHandler(new XorCsrfTokenRequestAttributeHandler()))
                 .authorizeHttpRequests((authorize) -> authorize
-                                .requestMatchers("/**").permitAll()
-                        /* .requestMatchers("/api/v1/image").permitAll()*/
+                                .requestMatchers(HttpMethod.GET,"/api/v1/auth/**").permitAll()
+                                .requestMatchers(HttpMethod.POST,"/api/v1/auth/**").permitAll()
+                                .requestMatchers(HttpMethod.GET,"/api/v1/permissions").hasAuthority(Role.ADMIN.getRole())
+                                .requestMatchers(HttpMethod.GET,"/api/v1/users").hasAuthority(Role.ADMIN.getRole())
+                                .requestMatchers(HttpMethod.PUT,"/api/v1/users/**").hasAuthority(Role.ADMIN.getRole())
+                                .requestMatchers(HttpMethod.GET,"/api/v1/forum-categories/pending").hasAnyAuthority(Role.ADMIN.getRole(), Role.MODERATOR.getRole())
+                                .requestMatchers(HttpMethod.GET,"/api/v1/forum-categories/**").authenticated()
+                                .requestMatchers(HttpMethod.POST,"/api/v1/forum-categories/*").hasAuthority("CREATE")
+                                .requestMatchers(HttpMethod.PUT,"/api/v1/forum-categories/comments/*").hasAuthority("UPDATE")
+                                .requestMatchers(HttpMethod.PUT,"/api/v1/forum-categories/comments/accept/*").hasAnyAuthority(Role.ADMIN.getRole(), Role.MODERATOR.getRole())
+                                .requestMatchers(HttpMethod.DELETE,"/api/v1/forum-categories/comments/forbid/*").hasAnyAuthority(Role.ADMIN.getRole(), Role.MODERATOR.getRole())
+                                .requestMatchers(HttpMethod.DELETE,"/api/v1/forum-categories/comments/*/*").hasAuthority("DELETE")
+                                .anyRequest().denyAll()
+
                 )
                 .sessionManagement(manager -> manager.sessionCreationPolicy(STATELESS))
                 .authenticationProvider(daoAuthenticationProvider())
                 .addFilterBefore(
                         jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        // .httpBasic(Customizer.withDefaults());
+
         return httpSecurity.build();
-//        httpSecurity = httpSecurity.cors().and().csrf().disable().sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and();
-//         = httpSecurity.authorizeHttpRequests().anyRequest().permitAll().and();
-//
-//        httpSecurity.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-//        return httpSecurity.build();
     }
     @Bean
     DaoAuthenticationProvider daoAuthenticationProvider() {

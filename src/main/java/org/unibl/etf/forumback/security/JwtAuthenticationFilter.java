@@ -38,6 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 filterChain.doFilter(request, response); // ide na sledeci filter ako nema tokena
                 return;
             }
+            //System.out.println(request.getReader().readLine());
             // token
             String jwt = authorizationHeader.substring(7);
             String username = jwtService.extractUsername(jwt);

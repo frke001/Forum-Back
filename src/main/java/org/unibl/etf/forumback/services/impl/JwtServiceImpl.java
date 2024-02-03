@@ -5,10 +5,14 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.unibl.etf.forumback.models.dto.JwtUserDTO;
+import org.unibl.etf.forumback.repositories.BlacklistRepository;
+import org.unibl.etf.forumback.services.BlacklistService;
 import org.unibl.etf.forumback.services.JwtService;
 
 import java.security.Key;
@@ -20,8 +24,15 @@ import java.util.function.Function;
 @Service
 public class JwtServiceImpl implements JwtService {
 
+    private final BlacklistService blacklistService;
+    private final BlacklistRepository blacklistRepository;
     @Value("${application.security.jwt.secret-key}")
     private String secretKey;
+
+    public JwtServiceImpl(BlacklistService blacklistService, BlacklistRepository blacklistRepository) {
+        this.blacklistService = blacklistService;
+        this.blacklistRepository = blacklistRepository;
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -62,11 +73,23 @@ public class JwtServiceImpl implements JwtService {
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token) && !blacklistService.existsByToken(token);
     }
 
-    private boolean isTokenExpired(String token) {
+    @Override
+    public boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
+    }
+
+    @Override
+    @Scheduled(cron = "0 30 20 * * ?")
+    public void clearOutdatedBlacklist() {
+        var all = blacklistRepository.findAll();
+        all.stream().forEach(el->{
+            if(isTokenExpired(el.getToken())){
+                blacklistRepository.delete(el);
+            }
+        });
     }
 
     private Date extractExpiration(String token) {
